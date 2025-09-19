@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>El Arquitecto de la Semana Perfecta</title>
+<style>
+  /* =========================================================
+     EL ARQUITECTO DE LA SEMANA PERFECTA (SPA - 1 archivo)
+     Estética: calendario cartoon, colores brillantes, iconos grandes,
+     animaciones suaves, voz en off y subtítulos.
+     Accesibilidad por defecto: voz + subtítulos + alto contraste + daltonismo.
+     ========================================================= */
+
+  :root{
+    --bg:#fff7ff;
+    --ink:#1b1b1b;
+    --muted:#666;
+    --card:#ffffff;
+    --accent:#7a4dff;
+    --accent-2:#00b894;
+    --accent-3:#ff7675;
+    --accent-4:#feca57;
+    --ok:#19c37d;
+    --warn:#ffa534;
+    --bad:#ff4757;
+
+    /* Modo Alto Contraste (activado por defecto via .contrast-on) */
+    --hc-ink:#000;
+    --hc-bg:#fff;
+    --hc-card:#fff;
+    --hc-accent:#000;
+
+    /* Modo Daltonismo: usar tonos diferenciables y patrones */
+    --cb-tareas:#0066cc;
+    --cb-salud:#008a2e;
+    --cb-div:#a82b8a;
+  }
+
+  body{
+    margin:0; font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
+    background: var(--bg); color: var(--ink);
+    line-height:1.2;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Alto contraste por defecto */
+  body.contrast-on{
+    --bg:var(--hc-bg);
+    --card:var(--hc-card);
+    --ink:var(--hc-ink);
+    --accent:var(--hc-ink);
+    --accent-2:#111;
+    --accent-3:#111;
+    --accent-4:#111;
+    --muted:#222;
+  }
+
+  /* Layout general */
+  .screen{ display:none; min-height:100svh; padding:16px; }
+  .screen.active{ display:block; }
+
+  .title{
+    font-size: clamp(28px, 5vw, 56px);
+    font-weight:900;
+    letter-spacing:0.5px;
+    text-align:center;
+    margin: 16px auto 8px;
+  }
+
+  .subtitle{ text-align:center; color:var(--muted); margin-bottom:16px; }
+
+  .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:center; }
+  .col{ display:flex; flex-direction:column; gap:12px; }
+
+  .btn{
+    cursor:pointer; border:none; border-radius:14px; padding:16px 22px; font-size:18px; font-weight:800;
+    transition: transform .08s ease, box-shadow .12s ease, background .2s ease;
+    background: var(--accent); color:white; box-shadow: 0 6px 0 rgba(0,0,0,.15);
+    min-width: 180px; text-align:center;
+  }
+  .btn:hover{ transform: translateY(-1px); }
+  .btn:active{ transform: translateY(1px); }
+  .btn.secondary{ background: var(--accent-2); }
+  .btn.warn{ background: var(--accent-3); }
+  .btn.light{ background:#f1f2f6; color:#111; }
+  .btn.ghost{ background:transparent; color:var(--ink); box-shadow:none; }
+
+  .card{
+    background: var(--card); border-radius:20px; padding:16px; box-shadow: 0 10px 30px rgba(0,0,0,.06);
+  }
+
+  .toggle{
+    display:flex; align-items:center; gap:10px; background:var(--card);
+    padding:10px 12px; border-radius:14px; box-shadow: 0 6px 24px rgba(0,0,0,.05);
+    min-width: 230px; justify-content:space-between; font-weight:700;
+  }
+  .toggle input{ width:48px; height:28px; accent-color: var(--accent); }
+
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; align-items:center; justify-content:center; z-index:50;
+  }
+  .modal{ width:min(900px, 92vw); background:var(--card); border-radius:18px; padding:14px; }
+  .modal-header{ display:flex; justify-content:space-between; align-items:center; padding:6px 8px 10px; }
+  .modal-body{ padding:8px; }
+  .close{ appearance:none; background:transparent; border:none; font-size:28px; cursor:pointer; color:var(--ink); }
+
+  /* Inicio */
+  #inicio .logo-owl{
+    width:160px; height:160px; margin: 12px auto;
+    display:block;
+    filter: drop-shadow(0 10px 18px rgba(0,0,0,.08));
+  }
+
+  /* Slider de Cómo se juega (tres láminas con SVG) */
+  .slides{ display:grid; grid-template-columns:1fr; gap:12px; }
+  .slide-rail{ position:relative; overflow:hidden; border-radius:16px; background: #fafafa; }
+  .slides-track{ display:flex; transition: transform .35s ease; }
+  .slide{ min-width:100%; padding:12px; display:grid; grid-template-columns: 220px 1fr; align-items:center; gap:14px; }
+  .slide svg{ width:100%; height:180px; }
+  .pager{ display:flex; gap:8px; justify-content:center; margin-top:6px; }
+  .dot{ width:12px; height:12px; border-radius:999px; background:#ddd; cursor:pointer; }
+  .dot.active{ background:var(--accent); }
+
+  /* Briefing / tutorial con Maestro del Tiempo */
+  .owl-wrap{ display:flex; align-items:center; gap:14px; justify-content:center; flex-wrap:wrap; }
+  .owl{ width:160px; height:160px; }
+  .speech{ font-size:22px; font-weight:800; background:#fffbe6; border:3px solid #111; padding:12px 14px; border-radius:16px; }
+
+  /* Juego principal */
+  #juego .ui{ display:grid; grid-template-columns: 320px 1fr; gap:14px; }
+  @media (max-width: 980px){
+    #juego .ui{ grid-template-columns:1fr; }
+  }
+
+  .palette{ display:flex; flex-direction:column; gap:12px; }
+  .category{
+    border-radius:16px; padding:10px; border:3px dashed rgba(0,0,0,.07);
+    background: linear-gradient(180deg, #fff, #f8f8f8);
+  }
+  .cat-title{ font-weight:900; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .blocks{ display:grid; grid-template-columns:1fr; gap:10px; }
+  .block{
+    display:flex; align-items:center; gap:10px; font-weight:800; padding:12px;
+    border-radius:12px; cursor:grab; user-select:none;
+    box-shadow: 0 6px 14px rgba(0,0,0,.05); background:#fff;
+    border:2px solid transparent;
+  }
+  .block:active{ cursor:grabbing; }
+  .block .ico{ font-size:28px; width:36px; text-align:center; }
+  .counter{ margin-left:auto; background:#0000000d; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:900; }
+
+  /* Color-blind friendly outlines (daltonismo) */
+  body.dalton-on .category[data-cat="TAREAS"] .cat-title{ color:var(--cb-tareas); }
+  body.dalton-on .category[data-cat="SALUD"] .cat-title{ color:var(--cb-salud); }
+  body.dalton-on .category[data-cat="DIVERSION"] .cat-title{ color:var(--cb-div); }
+  body.dalton-on .block[data-cat="TAREAS"]{ border-color:var(--cb-tareas); }
+  body.dalton-on .block[data-cat="SALUD"]{ border-color:var(--cb-salud); }
+  body.dalton-on .block[data-cat="DIVERSION"]{ border-color:var(--cb-div); }
+
+  .calendar{ background:var(--card); border-radius:18px; padding:10px; box-shadow: 0 10px 30px rgba(0,0,0,.06); }
+  .cal-grid{ display:grid; grid-template-columns: repeat(5, 1fr); gap:8px; }
+  .day-col{ background:#fafafa; border-radius:12px; padding:8px; display:flex; flex-direction:column; gap:6px; }
+  .day-title{ font-weight:900; text-align:center; margin-bottom:4px; }
+  .slot{
+    min-height:72px; border-radius:10px; background:#ffffff; border:2px dashed #ddd;
+    display:flex; align-items:center; justify-content:center; padding:6px;
+    text-align:center; font-weight:800; gap:6px; position:relative; outline:none;
+  }
+  .slot:focus{ box-shadow: 0 0 0 4px #7a4dff55; }
+  .slot.filled{ border-style:solid; border-color:#bbb; }
+  .slot .mini{ font-size:24px; }
+  .slot .name{ font-size:12px; color:#333; }
+
+  .slot.bad-chain::after{
+    content:"⚠️"; position:absolute; top:4px; right:6px; font-size:16px;
+    animation: buzz .6s ease both infinite alternate;
+  }
+  @keyframes buzz { from{ transform:translateX(0);} to{ transform:translateX(1.5px); } }
+
+  /* HUD superior */
+  .hud{ display:flex; align-items:center; gap:8px; justify-content:space-between; margin-top:10px; flex-wrap:wrap;}
+  .meters{ display:flex; gap:8px; flex-wrap:wrap; }
+  .meter{
+    width:260px; background:#f1f2f6; border-radius:12px; padding:6px 8px;
+  }
+  .meter .label{ font-weight:900; font-size:12px; margin-bottom:4px; display:flex; justify-content:space-between; }
+  .meter .bar{ height:16px; border-radius:999px; background: repeating-linear-gradient(45deg, #e6e6e6, #e6e6e6 8px, #f6f6f6 8px, #f6f6f6 16px); overflow:hidden; }
+  .meter .fill{ height:100%; width:60%; background:linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius:999px; transition: width .25s ease; }
+
+  /* Colores por estado */
+  .fill.ok{ background: linear-gradient(90deg, #00c853, #64dd17); }
+  .fill.warn{ background: linear-gradient(90deg, #ffb300, #ffd54f); }
+  .fill.bad{ background: linear-gradient(90deg, #ff5252, #ff1744); }
+
+  /* Indicaciones y tooltips simples */
+  .hint{ font-size:12px; color:var(--muted); }
+
+  /* Barra de subtítulos accesibles */
+  #subtitles{
+    position:fixed; left:0; right:0; bottom:0; z-index:60;
+    background: rgba(0,0,0,.75); color:white; padding:8px 12px; font-size:18px; text-align:center;
+    display:none;
+  }
+  body.subs-on #subtitles{ display:block; }
+
+  /* Overlay simulación */
+  #simOverlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; z-index:55;
+    align-items:center; justify-content:center; text-align:center; color:white; padding:20px;
+  }
+  #simOverlay.on{ display:flex; }
+  .avatar{
+    font-size:84px; filter: drop-shadow(0 14px 24px rgba(0,0,0,.28));
+    animation: pop .35s ease;
+  }
+  @keyframes pop{ from{ transform:scale(.8); opacity:0;} to{ transform:scale(1); opacity:1;} }
+  .sim-card{ background:#111a; border:2px solid #fff8; border-radius:16px; padding:14px; }
+
+  /* Resultado */
+  .result{ display:grid; gap:10px; justify-items:center; }
+  .trophy{ font-size:90px; }
+
+  /* Accesibilidad: zonas táctiles grandes */
+  .big{ min-height:64px; min-width:64px; }
+
+  /* Pequeñas etiquetas sobre botones */
+  .kbd{
+    font-weight:900; background:#00000014; padding:2px 8px; border-radius:8px; font-size:12px;
+  }
+</style>
+</head>
+<body class="contrast-on dalton-on subs-on">
+
+<!-- SUBTÍTULOS ACCESIBLES -->
+<div id="subtitles" aria-live="polite"></div>
+
+<!-- 1) INICIO -->
+<section id="inicio" class="screen active">
+  <h1 class="title">El Arquitecto de la Semana Perfecta</h1>
+  <p class="subtitle">Planifica tu semana con equilibrio: <strong>Tareas</strong>, <strong>Salud</strong> y <strong>Diversión</strong>.</p>
+  <!-- Búho/logo SVG sencillo -->
+  <svg class="logo-owl" viewBox="0 0 200 200" aria-hidden="true">
+    <defs>
+      <linearGradient id="g1" x1="0" x2="1">
+        <stop offset="0" stop-color="#7a4dff"/><stop offset="1" stop-color="#00b894"/>
+      </linearGradient>
+    </defs>
+    <circle cx="100" cy="100" r="88" fill="url(#g1)" />
+    <g transform="translate(40,55)">
+      <ellipse cx="60" cy="55" rx="52" ry="45" fill="#fff"/>
+      <circle cx="40" cy="55" r="16" fill="#111"/>
+      <circle cx="80" cy="55" r="16" fill="#111"/>
+      <polygon points="60,70 50,90 70,90" fill="#ffcc00"/>
+    </g>
+    <rect x="130" y="30" width="18" height="62" rx="9" fill="#fff"/>
+    <rect x="130" y="30" width="18" height="24" rx="9" fill="#111"/>
+  </svg>
+
+  <div class="row" style="margin-top:10px">
+    <button class="btn big" id="btnJugar">Jugar</button>
+    <button class="btn secondary big" id="btnComo">Cómo se juega</button>
+  </div>
+
+  <div class="row" style="margin-top:12px">
+    <div class="toggle"><span>🎵 Música</span><input type="checkbox" id="togMusic" checked /></div>
+    <div class="toggle"><span>🗣️ Voz</span><input type="checkbox" id="togVoice" checked /></div>
+    <div class="toggle"><span>💬 Subtítulos</span><input type="checkbox" id="togSubs" checked /></div>
+    <div class="toggle"><span>🌓 Alto Contraste</span><input type="checkbox" id="togContrast" checked /></div>
+    <div class="toggle"><span>🎨 Daltonismo</span><input type="checkbox" id="togDalton" checked /></div>
+  </div>
+</section>
+
+<!-- MODAL: CÓMO SE JUEGA -->
+<div id="modalComo" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="comoTitle">
+  <div class="modal card">
+    <div class="modal-header">
+      <h3 id="comoTitle">Cómo se juega</h3>
+      <button class="close" aria-label="Cerrar" id="closeComo">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="slide-rail">
+        <div id="slidesTrack" class="slides-track">
+          <!-- Lámina 1 -->
+          <div class="slide">
+            <svg viewBox="0 0 300 180" aria-hidden="true">
+              <rect x="10" y="10" width="280" height="160" rx="14" fill="#f1f2f6"/>
+              <rect x="24" y="28" width="80" height="30" rx="10" fill="#7a4dff"/>
+              <rect x="24" y="68" width="80" height="30" rx="10" fill="#00b894"/>
+              <rect x="24" y="108" width="80" height="30" rx="10" fill="#ff7675"/>
+              <rect x="130" y="28" width="150" height="110" rx="10" fill="#fff"/>
+              <text x="38" y="48" fill="#fff" font-weight="800">📚</text>
+              <text x="38" y="88" fill="#fff" font-weight="800">💪</text>
+              <text x="38" y="128" fill="#fff" font-weight="800">🎮</text>
+              <path d="M105 44 Q118 44 124 44" stroke="#111" stroke-width="3" fill="none" marker-end="url(#arrow)" />
+              <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#111"/></marker></defs>
+            </svg>
+            <div class="speech">Arrastra o toca bloques a tu <strong>calendario</strong>. Zonas grandes. ¡Fácil!</div>
+          </div>
+          <!-- Lámina 2 -->
+          <div class="slide">
+            <svg viewBox="0 0 300 180">
+              <rect x="15" y="15" width="270" height="150" rx="16" fill="#fff"/>
+              <text x="30" y="58" font-size="28">🌙 Noche</text>
+              <rect x="28" y="78" width="110" height="54" rx="10" fill="#00b894"/>
+              <text x="40" y="110" font-size="22" fill="#fff">💤 Dormir</text>
+              <text x="170" y="110" font-size="20">Obligatorio</text>
+            </svg>
+            <div class="speech">Pon <strong>“Dormir 8 horas”</strong> en la Noche. Si falta, ¡penaliza el día siguiente!</div>
+          </div>
+          <!-- Lámina 3 -->
+          <div class="slide">
+            <svg viewBox="0 0 300 180">
+              <rect x="20" y="20" width="260" height="140" rx="14" fill="#fff"/>
+              <text x="40" y="70" font-size="28">🎮 ➜ 🎮</text>
+              <text x="40" y="110" font-size="28">o ▶️ ➜ ▶️</text>
+              <text x="180" y="96" font-size="20">⚠️</text>
+            </svg>
+            <div class="speech">Evita <strong>pantallas consecutivas</strong>. Baja Salud y un poco Tareas.</div>
+          </div>
+        </div>
+      </div>
+      <div class="pager">
+        <div class="dot active" data-i="0"></div>
+        <div class="dot" data-i="1"></div>
+        <div class="dot" data-i="2"></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn secondary" id="btnEntendido">¡Entendido!</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2) BRIEFING -->
+<section id="briefing" class="screen">
+  <h2 class="title">Briefing</h2>
+  <div class="owl-wrap">
+    <svg class="owl" viewBox="0 0 200 200" aria-hidden="true">
+      <circle cx="100" cy="100" r="88" fill="#feca57" />
+      <g transform="translate(40,55)">
+        <ellipse cx="60" cy="55" rx="52" ry="45" fill="#fff"/>
+        <circle cx="40" cy="55" r="16" fill="#111"/>
+        <circle cx="80" cy="55" r="16" fill="#111"/>
+        <polygon points="60,70 50,90 70,90" fill="#ffcc00"/>
+      </g>
+      <!-- Reloj de arena -->
+      <g transform="translate(132,24)">
+        <rect x="0" y="0" width="28" height="64" rx="14" fill="#111"/>
+        <polygon points="4,10 24,10 17,26 11,26" fill="#fff"/>
+        <polygon points="4,54 24,54 17,38 11,38" fill="#fff"/>
+      </g>
+    </svg>
+    <div class="speech" id="briefLines">
+      <!-- Líneas cortas (voz + subtítulos) -->
+      <div>Tu recurso más valioso: <strong>¡el tiempo!</strong></div>
+      <div>Equilibra <strong>3 Medidores de Poder</strong>.</div>
+      <div>📚 Tareas · 💪 Salud · 🎮 Diversión</div>
+      <div class="hint">Mini demo: “Solo videojuegos” → 🎮 alto; 📚 y 💪 bajan. <strong>Balance primero</strong>.</div>
+    </div>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <button class="btn" id="btnBriefOk">¡Entendido!</button>
+  </div>
+</section>
+
+<!-- 3) MISIÓN (JUEGO) -->
+<section id="juego" class="screen">
+  <h2 class="title">Misión: Diseña tu semana</h2>
+  <div class="hint" style="text-align:center">Consejo: <strong>Tareas primero → descanso → diversión</strong>.</div>
+
+  <div class="hud">
+    <div class="meters">
+      <div class="meter" id="meterT"><div class="label"><span>📚 Tareas</span><span class="val">60%</span></div><div class="bar"><div class="fill" style="width:60%"></div></div></div>
+      <div class="meter" id="meterS"><div class="label"><span>💪 Salud</span><span class="val">60%</span></div><div class="bar"><div class="fill" style="width:60%"></div></div></div>
+      <div class="meter" id="meterD"><div class="label"><span>🎮 Diversión</span><span class="val">60%</span></div><div class="bar"><div class="fill" style="width:60%"></div></div></div>
+    </div>
+    <div class="row">
+      <button class="btn big" id="btnSimular"><span class="kbd">S</span> ¡SIMULAR SEMANA!</button>
+      <button class="btn light big" id="btnAcc">Accesibilidad</button>
+      <button class="btn warn big" id="btnReintentar">Reintentar</button>
+    </div>
+  </div>
+
+  <div class="ui" style="margin-top:10px">
+    <!-- Paleta de bloques -->
+    <div class="palette">
+
+      <div class="category card" data-cat="TAREAS">
+        <div class="cat-title">📚 TAREAS <span class="hint">[1]</span></div>
+        <div class="blocks" id="catTareas"></div>
+      </div>
+
+      <div class="category card" data-cat="SALUD">
+        <div class="cat-title">💪 SALUD <span class="hint">[2]</span></div>
+        <div class="blocks" id="catSalud"></div>
+      </div>
+
+      <div class="category card" data-cat="DIVERSION">
+        <div class="cat-title">🎮 DIVERSIÓN <span class="hint">[3]</span></div>
+        <div class="blocks" id="catDiversion"></div>
+      </div>
+
+      <div class="hint">Teclado: ← → días · ↑ ↓ ranuras · Enter colocar/quitar · S simular</div>
+    </div>
+
+    <!-- Calendario -->
+    <div class="calendar">
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+  </div>
+</section>
+
+<!-- OVERLAY SIMULACIÓN -->
+<div id="simOverlay">
+  <div class="sim-card">
+    <div class="avatar" id="avatar">🙂</div>
+    <div id="simText" style="margin-top:8px; font-weight:900; font-size:20px">Simulando…</div>
+  </div>
+</div>
+
+<!-- 4) RESULTADO -->
+<section id="resultado" class="screen">
+  <h2 class="title">Resultado</h2>
+  <div class="result card">
+    <div id="resIcon" class="trophy">🏆</div>
+    <div id="resText" style="font-weight:900; font-size:22px; text-align:center"></div>
+    <div class="hint" id="resAprendizaje"></div>
+    <div class="row">
+      <button class="btn" id="btnEditar">Editar plan</button>
+      <button class="btn secondary" id="btnLimpiar">Limpiar todo</button>
+    </div>
+  </div>
+</section>
+
+<!-- PANEL ACCESIBILIDAD -->
+<div id="modalAcc" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="accTitle">
+  <div class="modal card">
+    <div class="modal-header">
+      <h3 id="accTitle">Accesibilidad</h3>
+      <button class="close" aria-label="Cerrar" id="closeAcc">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="row">
+        <div class="toggle"><span>🎵 Música</span><input type="checkbox" id="accMusic" checked /></div>
+        <div class="toggle"><span>🗣️ Voz</span><input type="checkbox" id="accVoice" checked /></div>
+        <div class="toggle"><span>💬 Subtítulos</span><input type="checkbox" id="accSubs" checked /></div>
+        <div class="toggle"><span>🌓 Alto Contraste</span><input type="checkbox" id="accContrast" checked /></div>
+        <div class="toggle"><span>🎨 Daltonismo</span><input type="checkbox" id="accDalton" checked /></div>
+      </div>
+      <p class="hint" style="margin-top:10px">Zonas táctiles ≥ 64px. Funciona con teclado: 1=📚, 2=💪, 3=🎮.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   IMPLEMENTACIÓN (todo en un archivo, sin frameworks)
+   Estados: inicio → briefing → plan → simulacion → resultado
+   Datos sugeridos (editable por docentes)
+   ========================================================= */
+const dias = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
+const ranuras = ["Después de la escuela","Tarde 1","Tarde 2","Noche"];
+
+const bloques = [
+  {id:"tarea", cat:"TAREAS", icon:"📚", nombre:"Hacer la tarea", max:5, fx:{t:+25, s:-5, d:-5}},
+  {id:"estudiar", cat:"TAREAS", icon:"📚", nombre:"Estudiar examen", max:2, fx:{t:+30, s:-10, d:-10}},
+  {id:"parque", cat:"SALUD", icon:"💪", nombre:"Jugar en el parque", max:5, fx:{t:0, s:+25, d:+10}},
+  {id:"cenar", cat:"SALUD", icon:"💪", nombre:"Cenar en familia", max:5, fx:{t:0, s:+15, d:0}},
+  {id:"dormir", cat:"SALUD", icon:"💪", nombre:"Dormir 8 horas", max:5, onlySlot:"Noche", fx:{t:+5, s:+30, d:0}},
+  {id:"videojuegos", cat:"DIVERSION", icon:"🎮", nombre:"Jugar videojuegos", max:5, fx:{t:0, s:-10, d:+25}},
+  {id:"videos", cat:"DIVERSION", icon:"🎮", nombre:"Ver videos", max:3, fx:{t:0, s:-5, d:+20}}
+];
+
+const penalizaciones = {
+  sinDormir:{nextDay:{s:-30, tPrimerBloque:-10}},
+  pantallaConsecutiva:{s:-10, t:-5}
+};
+
+const inicioMedidores = {t:60, s:60, d:60}; // t=📚, s=💪, d=🎮
+
+/* ====== Estado global ====== */
+const state = {
+  screen:"inicio",
+  plan: Array.from({length:dias.length}, ()=> Array.from({length:ranuras.length}, ()=> null)), // {id, ref}
+  used: Object.fromEntries(bloques.map(b=>[b.id,0])),
+  meters: {...inicioMedidores},
+  focus:{day:0, slot:0},
+  selectedBlockId:null,
+  toggles:{music:true, voice:true, subs:true, contrast:true, dalton:true},
+  pendingPenalty: Array.from({length:dias.length}, ()=> ({sinDormir:false, appliedFirstBlock:false})),
+  messagesOn:true,
+  simulating:false,
+};
+
+/* ====== Utilitarios ====== */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+function byId(id){ return bloques.find(b=>b.id===id); }
+
+/* ====== Audio: WebAudio (música y SFX sin archivos externos) ====== */
+let AC, musicGain, sfxGain;
+function ensureAudio(){
+  if(!AC){
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    musicGain = AC.createGain(); musicGain.gain.value = 0.15; musicGain.connect(AC.destination);
+    sfxGain = AC.createGain(); sfxGain.gain.value = 0.25; sfxGain.connect(AC.destination);
+    startMusic();
+  }
+}
+function startMusic(){
+  // Música tranquila: arpegio simple infinito (sin estilos externos)
+  if(!state.toggles.music) return;
+  const tempo = 90; // subirá un poco con buen balance
+  const seq = [0,4,7,12,7,4]; // arpegio
+  let t = AC.currentTime + 0.1;
+  const base = 220; // Hz
+  for(let i=0;i<64;i++){
+    const o = AC.createOscillator();
+    const g = AC.createGain();
+    const step = seq[i % seq.length];
+    o.frequency.value = base * Math.pow(2, step/12);
+    o.type = "triangle";
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.08, t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+0.5);
+    o.connect(g).connect(musicGain);
+    o.start(t);
+    o.stop(t+0.52);
+    t += 60/tempo * 0.5;
+  }
+  // Re-lanzar música para bucle suave
+  setTimeout(()=>{ if(state.toggles.music) startMusic(); }, 4000);
+}
+function setMusicLevel(){
+  if(!musicGain) return;
+  const avg = (state.meters.t + state.meters.s + state.meters.d)/3;
+  musicGain.gain.value = state.toggles.music ? clamp(0.10 + (avg-60)/400, 0.06, 0.25) : 0.0;
+}
+function sfx(type="ding"){
+  if(!AC || !state.toggles.music) return;
+  let freq = 880, dur=0.12, typeOsc="sine";
+  if(type==="ding"){ freq=880; }
+  if(type==="alert"){ freq=220; dur=0.2; }
+  if(type==="tick"){ freq=660; dur=0.05; }
+  if(type==="buzz"){ freq=140; dur=0.18; typeOsc="square"; }
+  const o = AC.createOscillator();
+  const g = AC.createGain();
+  o.type=typeOsc;
+  o.frequency.value = freq;
+  g.gain.value = 0.0001;
+  g.gain.exponentialRampToValueAtTime(0.18, AC.currentTime+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime+dur);
+  o.connect(g).connect(sfxGain);
+  o.start();
+  o.stop(AC.currentTime+dur+0.02);
+}
+
+/* ====== Voz y subtítulos ====== */
+let esVoice = null;
+function pickSpanishVoice(){
+  const vs = speechSynthesis.getVoices();
+  esVoice = vs.find(v => (v.lang || "").toLowerCase().startsWith("es")) || vs[0] || null;
+}
+if ('speechSynthesis' in window){
+  speechSynthesis.onvoiceschanged = pickSpanishVoice;
+  pickSpanishVoice();
+}
+function setSubs(text){
+  if(state.toggles.subs){
+    $("#subtitles").textContent = text || "";
+  }
+}
+function speak(text){
+  setSubs(text);
+  if(!state.toggles.voice || !('speechSynthesis' in window)) return;
+  try{
+    const u = new SpeechSynthesisUtterance(text);
+    if(esVoice) u.voice = esVoice;
+    u.lang = (esVoice && esVoice.lang) || "es-MX";
+    u.rate = 1; u.pitch = 1;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ====== Render ====== */
+function show(screenId){
+  $$(".screen").forEach(s=>s.classList.remove("active"));
+  $("#"+screenId).classList.add("active");
+  state.screen = screenId;
+}
+function renderInicio(){
+  // Toggles de inicio sincronizados
+  $("#togMusic").checked = state.toggles.music;
+  $("#togVoice").checked = state.toggles.voice;
+  $("#togSubs").checked = state.toggles.subs;
+  $("#togContrast").checked = state.toggles.contrast;
+  $("#togDalton").checked = state.toggles.dalton;
+  document.body.classList.toggle("subs-on", state.toggles.subs);
+  document.body.classList.toggle("contrast-on", state.toggles.contrast);
+  document.body.classList.toggle("dalton-on", state.toggles.dalton);
+}
+function renderPalette(){
+  const cont = {
+    "TAREAS": $("#catTareas"),
+    "SALUD": $("#catSalud"),
+    "DIVERSION": $("#catDiversion"),
+  };
+  Object.values(cont).forEach(el=>el.innerHTML="");
+
+  bloques.forEach(b=>{
+    const el = document.createElement("button");
+    el.className = "block big";
+    el.dataset.blockId = b.id;
+    el.dataset.cat = b.cat;
+    el.draggable = true;
+    el.innerHTML = `<span class="ico">${b.icon}</span> <span>${b.nombre}</span> <span class="counter" id="cnt_${b.id}">${state.used[b.id]}/${b.max}</span>`;
+    el.title = (b.cat==="TAREAS"?"Tareas primero":"") || (b.id==="dormir"?"¡Buen sueño!":"") || (b.cat==="SALUD"?"Descanso activo":"");
+    el.addEventListener("click", ()=>{
+      state.selectedBlockId = b.id;
+      $$(".block").forEach(x=>x.style.outline="none");
+      el.style.outline = "3px solid var(--accent)";
+      sfx("tick");
+    });
+    // Drag desktop
+    el.addEventListener("dragstart", ev=>{
+      ev.dataTransfer.setData("text/plain", b.id);
+      state.selectedBlockId = b.id;
+    });
+    cont[b.cat].appendChild(el);
+  });
+}
+function renderCalendar(){
+  const grid = $("#calGrid");
+  grid.innerHTML="";
+  dias.forEach((d, di)=>{
+    const col = document.createElement("div");
+    col.className = "day-col";
+    col.innerHTML = `<div class="day-title">${d}</div>`;
+    ranuras.forEach((r, si)=>{
+      const slot = document.createElement("button");
+      slot.className = "slot big";
+      slot.setAttribute("role","gridcell");
+      slot.setAttribute("tabindex","0");
+      slot.dataset.day = di;
+      slot.dataset.slot = si;
+      slot.addEventListener("dragover", e=> e.preventDefault());
+      slot.addEventListener("drop", e=>{
+        const id = e.dataTransfer.getData("text/plain");
+        placeBlock(di, si, id);
+      });
+      slot.addEventListener("click", ()=>{
+        if(state.selectedBlockId){
+          placeBlock(di, si, state.selectedBlockId);
+        }else{
+          // alternar quitar si ya hay algo
+          const cur = state.plan[di][si];
+          if(cur){ removeBlock(di, si); }
+        }
+      });
+      slot.addEventListener("keydown", (ev)=>{
+        if(ev.key==="Enter"){
+          if(state.selectedBlockId){
+            placeBlock(di, si, state.selectedBlockId);
+          }else{
+            const cur = state.plan[di][si];
+            if(cur) removeBlock(di, si);
+          }
+        }
+      });
+      updateSlotEl(slot, di, si);
+      col.appendChild(slot);
+    });
+    grid.appendChild(col);
+  });
+}
+function updateSlotEl(slotEl, di, si){
+  const rname = ranuras[si];
+  const obj = state.plan[di][si];
+  if(!obj){
+    slotEl.classList.remove("filled");
+    slotEl.innerHTML = `<div class="mini">⬜</div><div class="name">${rname}</div>`;
+    slotEl.classList.toggle("bad-chain", false);
+  }else{
+    const b = byId(obj.id);
+    slotEl.classList.add("filled");
+    slotEl.innerHTML = `<div class="mini">${b.icon}</div><div class="name">${b.nombre}</div>`;
+    slotEl.classList.toggle("bad-chain", isConsecutiveScreen(di, si));
+  }
+}
+function renderMeters(){
+  const map = {t:"#meterT", s:"#meterS", d:"#meterD"};
+  Object.entries(map).forEach(([k, sel])=>{
+    const cont = $(sel);
+    const v = Math.round(state.meters[k]);
+    cont.querySelector(".val").textContent = v+"%";
+    const fill = cont.querySelector(".fill");
+    fill.style.width = v+"%";
+    fill.classList.remove("ok","warn","bad");
+    fill.classList.add(v>=80 ? "ok" : v<60 ? "bad" : "warn");
+  });
+  setMusicLevel();
+}
+
+/* ====== Lógica de colocación ====== */
+function canPlace(id, di, si){
+  const b = byId(id);
+  if(!b) return false;
+  // Regla de dormir solo en noche
+  if(b.onlySlot && ranuras[si] !== b.onlySlot) return false;
+  // Máximo por semana
+  if(state.used[id] >= b.max && !(state.plan[di][si] && state.plan[di][si].id===id)) return false;
+  return true;
+}
+function placeBlock(di, si, id){
+  const b = byId(id);
+  if(!b) return;
+  if(!canPlace(id, di, si)){
+    sfx("alert"); flashSlot(di, si); speak("Ese bloque no va ahí");
+    return;
+  }
+  // Si ya hay bloque, liberarlo
+  const cur = state.plan[di][si];
+  if(cur){ state.used[cur.id] = Math.max(0, state.used[cur.id]-1); }
+  // Colocar
+  state.plan[di][si] = {id};
+  state.used[id] = Math.min(byId(id).max, state.used[id]+1);
+  // Actualizar UI
+  renderCounters();
+  const slotEl = document.querySelector(`.slot[data-day="${di}"][data-slot="${si}"]`);
+  updateSlotEl(slotEl, di, si);
+  // Tooltip por pantallas consecutivas
+  if(isConsecutiveScreen(di, si)){
+    slotEl.title = "⚠️ Demasiadas pantallas seguidas";
+  }else{
+    slotEl.title = "";
+  }
+  sfx("tick");
+}
+function removeBlock(di, si){
+  const cur = state.plan[di][si];
+  if(!cur) return;
+  state.used[cur.id] = Math.max(0, state.used[cur.id]-1);
+  state.plan[di][si] = null;
+  renderCounters();
+  const slotEl = document.querySelector(`.slot[data-day="${di}"][data-slot="${si}"]`);
+  updateSlotEl(slotEl, di, si);
+  sfx("tick");
+}
+function renderCounters(){
+  bloques.forEach(b=>{
+    const el = $("#cnt_"+b.id);
+    if(el) el.textContent = `${state.used[b.id]}/${b.max}`;
+  });
+}
+function flashSlot(di, si){
+  const el = document.querySelector(`.slot[data-day="${di}"][data-slot="${si}"]`);
+  if(!el) return;
+  el.animate([{transform:"scale(1)"},{transform:"scale(1.05)"},{transform:"scale(1)"}], {duration:220, easing:"ease-out"});
+}
+
+/* ====== Reglas especiales ====== */
+// ¿Pantalla consecutiva en mismo día?
+function isConsecutiveScreen(di, si){
+  const cur = state.plan[di][si];
+  if(!cur) return false;
+  const curId = cur.id;
+  const screenIds = ["videojuegos","videos"];
+  if(!screenIds.includes(curId)) return false;
+  // anterior slot del mismo día
+  if(si>0){
+    const prev = state.plan[di][si-1];
+    if(prev && screenIds.includes(prev.id)) return true;
+  }
+  return false;
+}
+
+/* ====== Simulación de semana ====== */
+function setMeters(delta){
+  state.meters.t = clamp(state.meters.t + (delta.t||0), 0, 100);
+  state.meters.s = clamp(state.meters.s + (delta.s||0), 0, 100);
+  state.meters.d = clamp(state.meters.d + (delta.d||0), 0, 100);
+  renderMeters();
+}
+
+function applyEffects(blockId, contexto){
+  const b = byId(blockId);
+  if(!b) return;
+  const delta = {...b.fx}; // base
+  // Pantalla consecutiva extra
+  if(contexto.consecutiva){
+    delta.s += penalizaciones.pantallaConsecutiva.s;
+    delta.t += penalizaciones.pantallaConsecutiva.t;
+  }
+  setMeters(delta);
+}
+
+function applySleepPenalty(dayIndex){
+  const p = state.pendingPenalty[dayIndex];
+  if(p && p.sinDormir){
+    setMeters({t:0, d:0, s:penalizaciones.sinDormir.nextDay.s}); // aplicar sueño
+    speak("Falta dormir");
+    sfx("alert");
+  }
+}
+
+async function simulateWeek(){
+  if(state.simulating) return;
+  state.simulating = true;
+  $("#simOverlay").classList.add("on");
+  // Reiniciar medidores
+  state.meters = {...inicioMedidores};
+  renderMeters();
+  // Construir penalizaciones de sueño para cada día
+  for(let di=0; di<dias.length; di++){
+    const noche = state.plan[di][3]; // slot 3 = Noche
+    const durmio = noche && noche.id==="dormir";
+    if(di+1<dias.length){
+      state.pendingPenalty[di+1].sinDormir = !durmio;
+      state.pendingPenalty[di+1].appliedFirstBlock = false;
+    }
+  }
+
+  const screenIds = ["videojuegos","videos"];
+
+  for(let di=0; di<dias.length; di++){
+    $("#simText").textContent = `Simulando ${dias[di]}…`;
+    speak(`Día ${dias[di]}`);
+    await wait(400);
+
+    // Al iniciar el día, aplicar penalización por falta de sueño del día anterior
+    applySleepPenalty(di);
+
+    for(let si=0; si<ranuras.length; si++){
+      const obj = state.plan[di][si];
+      const name = obj ? byId(obj.id).nombre : "(libre)";
+      const icon = obj ? byId(obj.id).icon : "🕓";
+      $("#avatar").textContent = obj ? icon : "🙂";
+      $("#simText").textContent = `${dias[di]} · ${ranuras[si]} · ${name}`;
+      // Efectos
+      if(obj){
+        const consecutiva = (si>0) && screenIds.includes(obj.id) && state.plan[di][si-1] && screenIds.includes(state.plan[di][si-1].id);
+        if(consecutiva){ sfx("buzz"); speak("Demasiadas pantallas seguidas"); }
+        // Atención baja al primer bloque si faltó dormir
+        let extra = {t:0,s:0,d:0};
+        if(si===0 && state.pendingPenalty[di].sinDormir && !state.pendingPenalty[di].appliedFirstBlock){
+          extra.t += penalizaciones.sinDormir.nextDay.tPrimerBloque;
+          state.pendingPenalty[di].appliedFirstBlock = true;
+        }
+        applyEffects(obj.id, {consecutiva});
+        if(extra.t || extra.s || extra.d) setMeters(extra);
+
+        // Mensajes cortos positivos
+        const msg = obj.id==="tarea"||obj.id==="estudiar" ? "¡Bien hecho!" :
+                    obj.id==="dormir"||obj.id==="cenar"||obj.id==="parque" ? "¡Buen descanso!" :
+                    "¡Tiempo de jugar!";
+        speak(msg);
+        sfx("ding");
+      }else{
+        // Hueco libre
+        sfx("tick");
+      }
+      await wait(420);
+    }
+  }
+  $("#simOverlay").classList.remove("on");
+  state.simulating = false;
+  showResult();
+}
+
+function wait(ms){ return new Promise(res=>setTimeout(res,ms)); }
+
+/* ====== Resultado ====== */
+function showResult(){
+  const T = Math.round(state.meters.t);
+  const S = Math.round(state.meters.s);
+  const D = Math.round(state.meters.d);
+  const ok = (T>=80 && S>=80 && D>=80);
+  $("#resIcon").textContent = ok ? "🏆" : "🦉";
+  $("#resText").innerHTML = `¡Semana completada!<br/>📚 ${T}% · 💪 ${S}% · 🎮 ${D}%`;
+  // Frase de aprendizaje
+  const nights = countNights();
+  const chains = countScreenChains();
+  const frases = [];
+  frases.push(`Dormiste bien <strong>${nights}</strong> noches: ${nights===5?"energía alta":"mejorable"}.`);
+  frases.push(chains>0 ? `Evitaste pantallas consecutivas <strong>${5 - Math.min(chains,5)}</strong> de 5 días.` : "¡Sin pantallas consecutivas! Excelente.");
+  $("#resAprendizaje").innerHTML = frases.join(" ");
+  speak(ok ? "¡Semana Perfecta! Trofeo logrado." : "Replanifica: tareas primero.");
+  show("resultado");
+}
+function countNights(){
+  let n=0; for(let di=0; di<dias.length; di++){ const noche = state.plan[di][3]; if(noche && noche.id==="dormir") n++; }
+  return n;
+}
+function countScreenChains(){
+  let c=0;
+  for(let di=0; di<dias.length; di++){
+    const a = state.plan[di];
+    for(let si=1; si<ranuras.length; si++){
+      if(isConsecutiveScreen(di, si)) c++;
+    }
+  }
+  return c;
+}
+
+/* ====== Accesibilidad y atajos ====== */
+function syncTogglesUI(){
+  $("#togMusic").checked = state.toggles.music;
+  $("#togVoice").checked = state.toggles.voice;
+  $("#togSubs").checked = state.toggles.subs;
+  $("#togContrast").checked = state.toggles.contrast;
+  $("#togDalton").checked = state.toggles.dalton;
+
+  $("#accMusic").checked = state.toggles.music;
+  $("#accVoice").checked = state.toggles.voice;
+  $("#accSubs").checked = state.toggles.subs;
+  $("#accContrast").checked = state.toggles.contrast;
+  $("#accDalton").checked = state.toggles.dalton;
+
+  document.body.classList.toggle("subs-on", state.toggles.subs);
+  document.body.classList.toggle("contrast-on", state.toggles.contrast);
+  document.body.classList.toggle("dalton-on", state.toggles.dalton);
+  if(!state.toggles.music && AC){ musicGain.gain.value = 0; }
+}
+function attachToggles(){
+  const map = [
+    ["#togMusic","music"],["#togVoice","voice"],["#togSubs","subs"],["#togContrast","contrast"],["#togDalton","dalton"],
+    ["#accMusic","music"],["#accVoice","voice"],["#accSubs","subs"],["#accContrast","contrast"],["#accDalton","dalton"],
+  ];
+  map.forEach(([sel,key])=>{
+    $(sel).addEventListener("change", (e)=>{
+      state.toggles[key] = e.target.checked;
+      syncTogglesUI();
+      if(key==="music" && e.target.checked){ ensureAudio(); startMusic(); }
+    });
+  });
+}
+
+document.addEventListener("keydown", (e)=>{
+  if(state.screen!=="juego") return;
+  if(e.key==="1"){ scrollToCat("TAREAS"); }
+  if(e.key==="2"){ scrollToCat("SALUD"); }
+  if(e.key==="3"){ scrollToCat("DIVERSION"); }
+  if(e.key.toLowerCase()==="s"){ simulateWeek(); }
+  const f = state.focus;
+  if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key)){
+    e.preventDefault();
+    if(e.key==="ArrowLeft") f.day = (f.day+dias.length-1)%dias.length;
+    if(e.key==="ArrowRight") f.day = (f.day+1)%dias.length;
+    if(e.key==="ArrowUp") f.slot = (f.slot+ranuras.length-1)%ranuras.length;
+    if(e.key==="ArrowDown") f.slot = (f.slot+1)%ranuras.length;
+    focusSlot(f.day, f.slot);
+  }
+  if(e.key==="Enter"){
+    const cur = state.plan[f.day][f.slot];
+    if(state.selectedBlockId) placeBlock(f.day, f.slot, state.selectedBlockId);
+    else if(cur) removeBlock(f.day, f.slot);
+  }
+});
+function focusSlot(di, si){
+  const el = document.querySelector(`.slot[data-day="${di}"][data-slot="${si}"]`);
+  if(el){ el.focus({preventScroll:false}); el.scrollIntoView({block:"nearest", behavior:"smooth"}); }
+}
+function scrollToCat(cat){
+  const el = document.querySelector(`.category[data-cat="${cat}"]`);
+  if(el) el.scrollIntoView({behavior:"smooth", block:"center"});
+  // seleccionar primer bloque de categoría
+  const first = el.querySelector(".block");
+  if(first){ first.click(); }
+}
+
+/* ====== Navegación básica ====== */
+$("#btnComo").addEventListener("click", ()=> openModal("#modalComo", true));
+$("#closeComo").addEventListener("click", ()=> openModal("#modalComo", false));
+$("#btnEntendido").addEventListener("click", ()=>{
+  openModal("#modalComo", false);
+  toBriefing();
+});
+$("#btnJugar").addEventListener("click", ()=>{
+  ensureAudio();
+  sfx("ding");
+  toBriefing();
+});
+function toBriefing(){
+  show("briefing");
+  speak("Tu recurso más valioso: el tiempo. Equilibra tres medidores de poder: tareas, salud y diversión. Balance primero.");
+}
+$("#btnBriefOk").addEventListener("click", ()=>{
+  speak("¡Vamos a planear la semana!");
+  toJuego();
+});
+
+function toJuego(){
+  show("juego");
+  renderPalette(); renderCalendar(); renderCounters(); renderMeters(); syncTogglesUI();
+}
+$("#btnSimular").addEventListener("click", simulateWeek);
+$("#btnReintentar").addEventListener("click", ()=>{
+  // Mantener plan para editar
+  speak("Ajusta tu plan y vuelve a simular.");
+  sfx("tick");
+});
+$("#btnAcc").addEventListener("click", ()=> openModal("#modalAcc", true));
+$("#closeAcc").addEventListener("click", ()=> openModal("#modalAcc", false));
+
+$("#btnEditar").addEventListener("click", ()=>{ show("juego"); speak("Edita tu plan"); });
+$("#btnLimpiar").addEventListener("click", ()=>{
+  // Limpiar plan y contadores
+  state.plan = Array.from({length:dias.length}, ()=> Array.from({length:ranuras.length}, ()=> null));
+  state.used = Object.fromEntries(bloques.map(b=>[b.id,0]));
+  renderCalendar(); renderCounters();
+  show("juego");
+});
+
+/* ====== Modal genérico ====== */
+function openModal(sel, open){
+  const m = $(sel);
+  m.style.display = open ? "flex" : "none";
+}
+
+/* ====== Slider COMO SE JUEGA ====== */
+const track = $("#slidesTrack");
+const dots = $$(".dot");
+dots.forEach(dot=>{
+  dot.addEventListener("click", ()=>{
+    const i = +dot.dataset.i;
+    setSlide(i);
+  });
+});
+function setSlide(i){
+  track.style.transform = `translateX(${-i*100}%)`;
+  dots.forEach((d,j)=> d.classList.toggle("active", j===i));
+}
+
+/* ====== Inicialización ====== */
+renderInicio(); attachToggles();
+
+/* ====== Eventos especiales (preparado para futuras "semanas especiales") ======
+   Ejemplo de estructura:
+   const eventos = [{dia:2, tipo:"proyectoCiencias", bloqueObligatorio:"estudiar"}];
+   (Docentes pueden usarlo para inyectar bloques obligatorios o límites dinámicos.)
+*/
+
+// ------------- AYUDA VISUAL: prellenado opcional de ejemplo (comentado) -------------
+// placeBlock(0,0,"tarea"); placeBlock(0,1,"parque"); placeBlock(0,2,"videojuegos"); placeBlock(0,3,"dormir");
+
+/* ====== Notas docentes ================================================
+   - Para editar efectos, ajuste los objetos en 'bloques' y 'penalizaciones'.
+   - applyEffects() define cómo se aplican cambios a los medidores (0–100).
+   - Reglas clave:
+     * Dormir solo en Noche (validado en canPlace()).
+     * Falta de dormir agrega penalización al día siguiente (applySleepPenalty()).
+     * Pantallas consecutivas aplican penalización extra.
+   - Mensajes y voz en speak().
+   - Música/SFX: WebAudio sin archivos, volumen depende del balance.
+   - Teclado: 1/2/3 categorías, flechas mueven foco, Enter coloca/borra, S simula.
+   ===================================================================== */
+</script>
+</body>
+</html>
